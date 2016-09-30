@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -74,7 +74,28 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        if successorGameState.isWin():
+            return float("inf")
+
+        valuePosition = successorGameState.getScore()
+
+        # Only need to avoid ghosts to a certain extent
+        ghostDistances = []
+        for ghostState in newGhostStates:
+            distance = manhattanDistance(ghostState.getPosition(), newPos)
+            ghostDistances.append(distance)
+            valuePosition += 3 * min(distance, 3)
+
+        foodList = newFood.asList()
+        foodList.sort(key=lambda pos: manhattanDistance(pos, newPos))
+        valuePosition -= 1 * manhattanDistance(foodList[0], newPos)
+        valuePosition += 9 * (currentGameState.getNumFood() - successorGameState.getNumFood())
+        capsuleLocations = currentGameState.getCapsules()
+        if successorGameState.getPacmanPosition() in capsuleLocations:
+            valuePosition += 20
+        if action == Directions.STOP:
+            valuePosition -= 3
+        return valuePosition
 
 def scoreEvaluationFunction(currentGameState):
     """
@@ -135,7 +156,34 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def maxValue(gameState, depth):
+            legalActions = gameState.getLegalActions(0)
+            if depth == self.depth or len(legalActions) == 0:
+                return (self.evaluationFunction(gameState), None)
+            actionScoreDict = {}
+            for action in legalActions:
+                newState = gameState.generateSuccessor(0, action)
+                newScore = minValue(newState, 1, depth)[0]
+                actionScoreDict[action] = newScore
+            bestAction = max(actionScoreDict, key = actionScoreDict.get)
+            return (actionScoreDict[bestAction], bestAction)
+
+        def minValue(gameState, agentID, depth):
+            legalActions = gameState.getLegalActions(agentID)
+            if len(legalActions) == 0:
+                return (self.evaluationFunction(gameState), None)
+            actionScoreDict = {}
+            for action in legalActions:
+                newState = gameState.generateSuccessor(agentID, action)
+                if (agentID == gameState.getNumAgents() - 1):
+                    newScore = maxValue(newState, depth + 1)[0]
+                else:
+                    newScore = minValue(newState, agentID + 1, depth)[0]
+                actionScoreDict[action] = newScore
+            bestAction = min(actionScoreDict, key = actionScoreDict.get)
+            return (actionScoreDict[bestAction], bestAction)
+
+        return maxValue(gameState, 0)[1]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -176,4 +224,3 @@ def betterEvaluationFunction(currentGameState):
 
 # Abbreviation
 better = betterEvaluationFunction
-

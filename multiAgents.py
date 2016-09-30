@@ -191,11 +191,40 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
 
     def getAction(self, gameState):
-        """
-          Returns the minimax action using self.depth and self.evaluationFunction
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def maxValue(gameState, alpha, beta, depth):
+            legalActions = gameState.getLegalActions(0)
+            if depth == self.depth or len(legalActions) == 0:
+                return (self.evaluationFunction(gameState), None)
+            actionScoreDict = {}
+            for action in legalActions:
+                newState = gameState.generateSuccessor(0, action)
+                newScore = minValue(newState, alpha, beta, 1, depth)[0]
+                actionScoreDict[action] = newScore
+                if newScore > beta:
+                    return (newScore, action)
+                alpha = max(alpha, newScore)
+            bestAction = max(actionScoreDict, key = actionScoreDict.get)
+            return (actionScoreDict[bestAction], bestAction)
+
+        def minValue(gameState, alpha, beta, agentID, depth):
+            legalActions = gameState.getLegalActions(agentID)
+            if len(legalActions) == 0:
+                return (self.evaluationFunction(gameState), None)
+            actionScoreDict = {}
+            for action in legalActions:
+                newState = gameState.generateSuccessor(agentID, action)
+                if (agentID == gameState.getNumAgents() - 1):
+                    newScore = maxValue(newState, alpha, beta, depth + 1)[0]
+                else:
+                    newScore = minValue(newState, alpha, beta, agentID + 1, depth)[0]
+                actionScoreDict[action] = newScore
+                if newScore < alpha:
+                    return (newScore, action)
+                beta = min(beta, newScore)
+            bestAction = min(actionScoreDict, key = actionScoreDict.get)
+            return (actionScoreDict[bestAction], bestAction)
+
+        return maxValue(gameState, float('-Inf'), float('Inf'), 0)[1]
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
